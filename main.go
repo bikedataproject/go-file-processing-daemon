@@ -2,11 +2,21 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tormoder/fit"
 )
+
+// Point : example data struct
+type Point struct {
+	Lat       float64   `json:"lat"`
+	Long      float64   `json:"lon"`
+	Timestamp time.Time `json:"timestamp"`
+	Speed     uint16
+}
 
 func main() {
 	// Open .FIT file
@@ -32,9 +42,25 @@ func main() {
 
 	log.Infof("Activity type: %v", act.Activity.Type)
 
+	var points []Point
+
 	// Get positions
 	for _, point := range act.Records {
-		log.Infof("Activity point: [%v, %v]", point.PositionLat, point.PositionLong)
+		p := Point{
+			Lat:       point.PositionLat.Degrees(),
+			Long:      point.PositionLong.Degrees(),
+			Timestamp: point.Timestamp,
+			Speed:     point.Speed,
+		}
+		points = append(points, p)
+	}
+
+	// Convert to JSON
+	pointsJSON, err := json.Marshal(points)
+	if err != nil {
+		log.Fatalf("Could not convert points to JSON: %v", err)
+	} else {
+		log.Info(string(pointsJSON))
 	}
 
 	for _, session := range act.Sessions {
