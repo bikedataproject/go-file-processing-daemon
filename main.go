@@ -49,7 +49,7 @@ func main() {
 		conf.PostgresPassword = ReadSecret(conf.PostgresPassword)
 		conf.PostgresPort = port
 		conf.PostgresDb = ReadSecret(conf.PostgresDb)
-		conf.FileDir = ReadSecret(conf.FileDir)
+		conf.FileDir = conf.FileDir
 		break
 	default:
 		if conf.PostgresDb == "" || conf.PostgresHost == "" || conf.PostgresPassword == "" || conf.PostgresPort == 0 || conf.PostgresRequireSSL == "" || conf.PostgresUser == "" || conf.FileDir == "" {
