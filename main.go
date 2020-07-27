@@ -72,7 +72,7 @@ func main() {
 	// Loop the service forever
 	for {
 		// Walk through file dir
-		files, err := crawl.WalkDirectory(conf.FileDir)
+		files, err := crawl.WalkDirectory(conf.FileDir, "fit")
 		if err != nil {
 			log.Fatal(err)
 		}

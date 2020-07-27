@@ -59,7 +59,7 @@ func (db Database) GetUserData(userID string) (usr dbmodel.User, err error) {
 	FROM "Users"
 	WHERE "ProviderUser"=$1;
 	`, userID).Scan(&usr.ID, &usr.UserIdentifier, &usr.Provider, &usr.ProviderUser, &usr.AccessToken, &usr.RefreshToken, &usr.TokenCreationDate, &usr.ExpiresAt, &usr.ExpiresIn, &usr.IsHistoryFetched)
-	log.Info(usr)
+
 	defer connection.Close()
 	return
 }
