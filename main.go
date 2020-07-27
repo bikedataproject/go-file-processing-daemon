@@ -1,69 +1,125 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"fmt"
+	"go-file-processing-daemon/config"
+	"go-file-processing-daemon/crawl"
+	"go-file-processing-daemon/database"
+	"go-file-processing-daemon/decode"
 	"io/ioutil"
+	"os"
+	"strconv"
 	"time"
 
+	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
+	"github.com/google/uuid"
+	"github.com/koding/multiconfig"
 	log "github.com/sirupsen/logrus"
-	"github.com/tormoder/fit"
 )
 
-// Point : example data struct
-type Point struct {
-	Lat       float64   `json:"lat"`
-	Long      float64   `json:"lon"`
-	Timestamp time.Time `json:"timestamp"`
-	Speed     uint16
+var db database.Database
+
+// ReadSecret : Read a file and return it's content as string - used for Docker secrets
+func ReadSecret(file string) string {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatalf("Could not fetch secret: %v", err)
+	}
+	return string(data)
 }
 
 func main() {
-	// Open .FIT file
-	file, err := ioutil.ReadFile("workout.fit")
+	// Set logging to file
+	logfile, err := os.OpenFile(fmt.Sprintf("log/%v.log", time.Now().Unix()), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("Something went wrong reading the file: ", err)
+		log.Fatalf("Could not create logfile: %v", err)
 	}
+	log.SetOutput(logfile)
 
-	// Decode fit file
-	fit, err := fit.Decode(bytes.NewReader(file))
-	if err != nil {
-		log.Fatalf("Could not read .FIT file: %v", err)
-	}
+	// Load configuration values
+	conf := &config.Config{}
+	multiconfig.MustLoad(conf)
 
-	// Print file info
-	log.Infof("File created at %v", fit.FileId.TimeCreated)
-
-	// Get activity data
-	act, err := fit.Activity()
-	if err != nil {
-		log.Fatalf("Could not fetch activity: %v", err)
-	}
-
-	log.Infof("Activity type: %v", act.Activity.Type)
-
-	var points []Point
-
-	// Get positions
-	for _, point := range act.Records {
-		p := Point{
-			Lat:       point.PositionLat.Degrees(),
-			Long:      point.PositionLong.Degrees(),
-			Timestamp: point.Timestamp,
-			Speed:     point.Speed,
+	// Set config
+	switch conf.DeploymentType {
+	case "production":
+		port, _ := strconv.ParseInt(ReadSecret(conf.PostgresPortEnv), 10, 64)
+		conf.PostgresHost = ReadSecret(conf.PostgresHost)
+		conf.PostgresUser = ReadSecret(conf.PostgresUser)
+		conf.PostgresPassword = ReadSecret(conf.PostgresPassword)
+		conf.PostgresPort = port
+		conf.PostgresDb = ReadSecret(conf.PostgresDb)
+		conf.FileDir = ReadSecret(conf.FileDir)
+		break
+	default:
+		if conf.PostgresDb == "" || conf.PostgresHost == "" || conf.PostgresPassword == "" || conf.PostgresPort == 0 || conf.PostgresRequireSSL == "" || conf.PostgresUser == "" || conf.FileDir == "" {
+			log.Fatal("Configuration not complete")
 		}
-		points = append(points, p)
+		break
 	}
 
-	// Convert to JSON
-	pointsJSON, err := json.Marshal(points)
-	if err != nil {
-		log.Fatalf("Could not convert points to JSON: %v", err)
-	} else {
-		log.Info(string(pointsJSON))
+	// Set database connection
+	db = database.Database{
+		PostgresHost:       conf.PostgresHost,
+		PostgresUser:       conf.PostgresUser,
+		PostgresPassword:   conf.PostgresPassword,
+		PostgresPort:       conf.PostgresPort,
+		PostgresDb:         conf.PostgresDb,
+		PostgresRequireSSL: conf.PostgresRequireSSL,
 	}
+	db.Connect()
 
-	for _, session := range act.Sessions {
-		log.Infof("Sport type: %v", session.Sport)
+	// Loop the service forever
+	for {
+		// Walk through file dir
+		files, err := crawl.WalkDirectory(conf.FileDir, "fit")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, file := range files {
+			// Convert FIT to contribution
+			contribution, err := decode.FitToContribution(file)
+			if err != nil {
+				log.Warnf("Could not convert .FIT to contribution: %v", err)
+			}
+
+			// Get userID from FIT
+			userID, err := decode.GetProviderID(file)
+			if err != nil {
+				log.Warnf("Could not convert .FIT to user: %v", err)
+			}
+
+			// Fetch user data
+			user, err := db.GetUserData(userID)
+			// Check if user exists; if not create a new object
+			if user.ID == "" {
+				user = dbmodel.User{
+					Provider:          "web/Garmin",
+					ProviderUser:      userID,
+					IsHistoryFetched:  true,
+					ExpiresAt:         -1,
+					ExpiresIn:         -1,
+					TokenCreationDate: time.Now(),
+					UserIdentifier:    uuid.New().String(),
+				}
+				usr, err := db.AddUser(&user)
+				if err != nil {
+					log.Fatalf("Could not create new user: %v", err)
+				}
+				user = usr
+			}
+
+			// Add contribution
+			if err := db.AddContribution(&contribution, &user); err != nil {
+				log.Errorf("Could not create contribution: %v", err)
+			} else {
+				log.Infof("Added contribution for user %v", userID)
+				os.Remove(file)
+			}
+		}
+
+		// Repeat each minute
+		time.Sleep(1 * time.Minute)
 	}
 }
