@@ -547,4 +547,8 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
+# Ignore .FIT & .GPX files
+*.fit
+*.gpx
+
 # End of https://www.toptal.com/developers/gitignore/api/linux,macos,windows,jetbrains+all,go,visualstudio,visualstudiocode

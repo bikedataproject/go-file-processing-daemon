@@ -1,14 +1,17 @@
-# garmin-fit-decoding
+# go-file-processing-daemon
 
-This repository contains a quick Golang example to decode Garmin `.FIT` files.
+![Docker Image CI](https://github.com/bikedataproject/go-file-processing-daemon/workflows/Docker%20Image%20CI/badge.svg)![Docker Image CD](https://github.com/bikedataproject/go-file-processing-daemon/workflows/Docker%20Image%20CD/badge.svg)
 
-## Example output
+This repository contains a service to process files that have been uploaded to the server.
 
-```log
-INFO[0000] File created at 2015-04-08 13:07:48 +0000 UTC
-INFO[0000] Activity type: Manual
-INFO[0000] Activity point: [26.30109, -80.24718]
-...
-INFO[0000] Activity point: [26.30108, -80.24689]
-INFO[0000] Sport type: Generic
+## Required parameters
+
+```sh
+export CONFIG_FILEDIR="files"
+export CONFIG_POSTGRESHOST="localhost"
+export CONFIG_POSTGRESPORT="5432"
+export CONFIG_POSTGRESPASSWORD="MyPostgresPassword"
+export CONFIG_POSTGRESUSER="postgres"
+export CONFIG_POSTGRESDB="bikedata"
+export CONFIG_POSTGRESREQUIRESSL="require"
 ```
