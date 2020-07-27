@@ -33,7 +33,7 @@ func getMin(arr []int64) (result int64) {
 }
 
 // FitToContribution : Read & decode a FIT file
-func FitToContribution(filedir string) (result dbmodel.Contribution, err error) {
+func FitToContribution(filedir string) (contrib dbmodel.Contribution, err error) {
 	// Read file from disk
 	file, err := ioutil.ReadFile(filedir)
 	if err != nil {
@@ -67,14 +67,19 @@ func FitToContribution(filedir string) (result dbmodel.Contribution, err error) 
 		unixTimes = append(unixTimes, point.Timestamp.Unix())
 	}
 
-	// Set values
-	result.UserAgent = "web/Garmin"
-	result.PointsGeom = path
-	result.PointsTime = timestamps
-	result.Distance = int(path.GeoDistance())
-	result.Duration = int(getMax(unixTimes) - getMin(unixTimes))
-	result.TimeStampStart = time.Unix(getMin(unixTimes), 0)
-	result.TimeStampStop = time.Unix(getMax(unixTimes), 0)
+	if len(timestamps) < 1 || len(unixTimes) < 1 {
+		err = fmt.Errorf("Couldn't convert to contribution: %v", "no data points available")
+		return
+	}
+
+	// Set contribution values
+	contrib.UserAgent = "web/Garmin"
+	contrib.PointsGeom = path
+	contrib.PointsTime = timestamps
+	contrib.Distance = int(path.GeoDistance())
+	contrib.Duration = int(getMax(unixTimes) - getMin(unixTimes))
+	contrib.TimeStampStart = time.Unix(getMin(unixTimes), 0)
+	contrib.TimeStampStop = time.Unix(getMax(unixTimes), 0)
 
 	return
 }

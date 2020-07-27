@@ -21,10 +21,10 @@ func main() {
 	}
 
 	for _, file := range files {
-		f, err := decode.FitToContribution(file)
+		contrib, err := decode.FitToContribution(file)
 		if err != nil {
 			log.Warnf("Could not convert .FIT to contribution: %v", err)
 		}
-		log.Info(f.TimeStampStart)
+		log.Info(contrib)
 	}
 }
