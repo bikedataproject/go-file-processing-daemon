@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go-file-processing-daemon/config"
 	"go-file-processing-daemon/crawl"
-	"go-file-processing-daemon/database"
 	"go-file-processing-daemon/decode"
 	"io/ioutil"
 	"os"
@@ -17,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var db database.Database
+var db dbmodel.Database
 
 // ReadSecret : Read a file and return it's content as string - used for Docker secrets
 func ReadSecret(file string) string {
@@ -49,7 +48,6 @@ func main() {
 		conf.PostgresPassword = ReadSecret(conf.PostgresPassword)
 		conf.PostgresPort = port
 		conf.PostgresDb = ReadSecret(conf.PostgresDb)
-		conf.FileDir = conf.FileDir
 		break
 	default:
 		if conf.PostgresDb == "" || conf.PostgresHost == "" || conf.PostgresPassword == "" || conf.PostgresPort == 0 || conf.PostgresRequireSSL == "" || conf.PostgresUser == "" || conf.FileDir == "" {
@@ -59,7 +57,7 @@ func main() {
 	}
 
 	// Set database connection
-	db = database.Database{
+	db = dbmodel.Database{
 		PostgresHost:       conf.PostgresHost,
 		PostgresUser:       conf.PostgresUser,
 		PostgresPassword:   conf.PostgresPassword,
@@ -67,7 +65,7 @@ func main() {
 		PostgresDb:         conf.PostgresDb,
 		PostgresRequireSSL: conf.PostgresRequireSSL,
 	}
-	db.Connect()
+	db.VerifyConnection()
 
 	// Loop the service forever
 	for {
