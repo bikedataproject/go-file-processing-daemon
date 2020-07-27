@@ -34,6 +34,8 @@ github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORN
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
+github.com/lib/pq v1.7.1 h1:FvD5XTVTDt+KON6oIoOmHq6B6HzGuYEhuTMpEG0yuBQ=
+github.com/lib/pq v1.7.1/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/mdempsky/unconvert v0.0.0-20190325185700-2f5dc3378ed3 h1:ONMmGu9qiY0FW95o5V7LBwZaMg58Sb9pUYtTD4/rgks=
 github.com/mdempsky/unconvert v0.0.0-20190325185700-2f5dc3378ed3/go.mod h1:9+3Wp2ccIz73BJqVfc7n2+1A+mzvnEwtDTqEjeRngBQ=
 github.com/paulmach/go.geo v0.0.0-20180829195134-22b514266d33 h1:doG/0aLlWE6E4ndyQlkAQrPwaojghwz1IlmH0kjTdyk=

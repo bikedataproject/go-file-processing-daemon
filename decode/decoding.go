@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
@@ -81,5 +82,26 @@ func FitToContribution(filedir string) (contrib dbmodel.Contribution, err error)
 	contrib.TimeStampStart = time.Unix(getMin(unixTimes), 0)
 	contrib.TimeStampStop = time.Unix(getMax(unixTimes), 0)
 
+	return
+}
+
+// GetProviderID : Convert FIT file & get serial number (user provider)
+func GetProviderID(filedir string) (userID string, err error) {
+	// Read file from disk
+	file, err := ioutil.ReadFile(filedir)
+	if err != nil {
+		err = fmt.Errorf("Could not open file %v : %v", filedir, err)
+		return
+	}
+
+	// Decode binary file
+	fit, err := fit.Decode(bytes.NewReader(file))
+	if err != nil {
+		err = fmt.Errorf("Could not read binary file as .FIT: %v", err)
+		return
+	}
+
+	// Set user value
+	userID = strconv.FormatUint(uint64(fit.FileId.SerialNumber), 10)
 	return
 }
