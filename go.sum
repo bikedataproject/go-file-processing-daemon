@@ -2,8 +2,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OneOfOne/xxhash v1.2.5 h1:zl/OfRA6nftbBK9qTohYBJ5xvw6C/oNKizR7cZGl3cI=
 github.com/OneOfOne/xxhash v1.2.5/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
-github.com/bikedataproject/go-bike-data-lib/dbmodel v0.0.0-20200722095709-5e193f85665e h1:7MaItUZWRTQIXu/zwZv2HzSYSJNvfR7/LZLwF5sEmjA=
-github.com/bikedataproject/go-bike-data-lib/dbmodel v0.0.0-20200722095709-5e193f85665e/go.mod h1:nlG/+rgFk6lx8rN0bfxo2F/hDix8bjdCFSPkqjsKZw4=
+github.com/bikedataproject/go-bike-data-lib/dbmodel v0.0.0-20200727162450-a47d3b297b9b h1:g+zqEaYpgJKUBd2fhtzcGi8PqOqnhA7m2oibnWDkhSg=
+github.com/bikedataproject/go-bike-data-lib/dbmodel v0.0.0-20200727162450-a47d3b297b9b/go.mod h1:puaYhkBYtfO+uSfgHater2N6t4BAeGnNqmGs0G1rifM=
 github.com/bradfitz/latlong v0.0.0-20170410180902-f3db6d0dff40/go.mod h1:ZcXX9BndVQx6Q/JM6B8x7dLE9sl20S+TQsv4KO7tEQk=
 github.com/cespare/xxhash v1.0.0 h1:naDmySfoNg0nKS62/ujM6e71ZgM2AoVdaqGwMG0w18A=
 github.com/cespare/xxhash v1.0.0/go.mod h1:fX/lfQBkSCDXZSUgv6jVIu/EVA3/JNseAX5asI4c4T4=
