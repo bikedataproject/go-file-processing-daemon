@@ -6,6 +6,7 @@ import (
 	"go-file-processing-daemon/database"
 	"go-file-processing-daemon/decode"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"time"
 
@@ -106,6 +107,7 @@ func main() {
 				log.Errorf("Could not create contribution: %v", err)
 			} else {
 				log.Infof("Added contribution for user %v", userID)
+				os.Remove(file)
 			}
 		}
 
