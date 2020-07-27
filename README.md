@@ -1,6 +1,6 @@
 # go-file-processing-daemon
 
-![Docker Image CI](https://github.com/bikedataproject/go-file-processing-daemon/workflows/Docker%20Image%20CI/badge.svg)
+![Docker Image CI](https://github.com/bikedataproject/go-file-processing-daemon/workflows/Docker%20Image%20CI/badge.svg)![Docker Image CD](https://github.com/bikedataproject/go-file-processing-daemon/workflows/Docker%20Image%20CD/badge.svg)
 
 This repository contains a service to process files that have been uploaded to the server.
 
