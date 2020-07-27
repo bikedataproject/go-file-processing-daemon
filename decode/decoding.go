@@ -13,6 +13,7 @@ import (
 	"github.com/tormoder/fit"
 )
 
+// getMax : Fetch the largest item of an array of integers
 func getMax(arr []int64) (result int64) {
 	result = arr[0]
 	for _, item := range arr {
@@ -23,6 +24,7 @@ func getMax(arr []int64) (result int64) {
 	return
 }
 
+// getMin : Fetch the smallest item of an array of integers
 func getMin(arr []int64) (result int64) {
 	result = arr[0]
 	for _, item := range arr {
