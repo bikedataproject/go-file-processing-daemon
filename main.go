@@ -5,6 +5,8 @@ import (
 	"go-file-processing-daemon/crawl"
 	"go-file-processing-daemon/database"
 	"go-file-processing-daemon/decode"
+	"io/ioutil"
+	"strconv"
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
@@ -15,10 +17,37 @@ import (
 
 var db database.Database
 
+// ReadSecret : Read a file and return it's content as string - used for Docker secrets
+func ReadSecret(file string) string {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatalf("Could not fetch secret: %v", err)
+	}
+	return string(data)
+}
+
 func main() {
 	// Load configuration values
 	conf := &config.Config{}
 	multiconfig.MustLoad(conf)
+
+	// Set config
+	switch conf.DeploymentType {
+	case "production":
+		port, _ := strconv.ParseInt(ReadSecret(conf.PostgresPortEnv), 10, 64)
+		conf.PostgresHost = ReadSecret(conf.PostgresHost)
+		conf.PostgresUser = ReadSecret(conf.PostgresUser)
+		conf.PostgresPassword = ReadSecret(conf.PostgresPassword)
+		conf.PostgresPort = port
+		conf.PostgresDb = ReadSecret(conf.PostgresDb)
+		conf.FileDir = ReadSecret(conf.FileDir)
+		break
+	default:
+		if conf.PostgresDb == "" || conf.PostgresHost == "" || conf.PostgresPassword == "" || conf.PostgresPort == 0 || conf.PostgresRequireSSL == "" || conf.PostgresUser == "" || conf.FileDir == "" {
+			log.Fatal("Configuration not complete")
+		}
+		break
+	}
 
 	// Set database connection
 	db = database.Database{

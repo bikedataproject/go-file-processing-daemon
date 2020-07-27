@@ -2,6 +2,8 @@ package config
 
 // Config : Struct holding configuration for the daemon
 type Config struct {
+	DeploymentType string `default:"production"`
+
 	FileDir string `required:"true"`
 
 	PostgresHost       string
