@@ -58,7 +58,7 @@ func HandleFitFile(file string) error {
 func HandleGpxFile(file string) error {
 	contribution, err := decode.GpxToContribution(file)
 	if err != nil {
-		return fmt.Errorf("Could not convert .FIT to contribution: %v", err)
+		return fmt.Errorf("Could not convert .GPX to contribution: %v", err)
 	}
 
 	// Use anonymous user since GPX files
