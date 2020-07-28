@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math"
 	"strconv"
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
 	geo "github.com/paulmach/go.geo"
+	"github.com/tkrajina/gpxgo/gpx"
 	"github.com/tormoder/fit"
 )
 
@@ -65,9 +67,9 @@ func FitToContribution(filedir string) (contrib dbmodel.Contribution, err error)
 		// Add point to complete path & filter out NaN values
 		if !math.IsNaN(point.PositionLat.Degrees()) && !math.IsNaN(point.PositionLong.Degrees()) {
 			path.Push(geo.NewPoint(point.PositionLong.Degrees(), point.PositionLat.Degrees()))
+			timestamps = append(timestamps, point.Timestamp)
+			unixTimes = append(unixTimes, point.Timestamp.Unix())
 		}
-		timestamps = append(timestamps, point.Timestamp)
-		unixTimes = append(unixTimes, point.Timestamp.Unix())
 	}
 
 	if len(timestamps) < 1 || len(unixTimes) < 1 {
@@ -76,7 +78,7 @@ func FitToContribution(filedir string) (contrib dbmodel.Contribution, err error)
 	}
 
 	// Set contribution values
-	contrib.UserAgent = "web/Garmin"
+	contrib.UserAgent = "web/Fileupload/fit"
 	contrib.PointsGeom = path
 	contrib.PointsTime = timestamps
 	contrib.Distance = int(path.GeoDistance())
@@ -105,5 +107,47 @@ func GetProviderID(filedir string) (userID string, err error) {
 
 	// Set user value
 	userID = strconv.FormatUint(uint64(fit.FileId.SerialNumber), 10)
+	return
+}
+
+// GpxToContribution : Convert a GPX file to contribution
+func GpxToContribution(filedir string) (contrib dbmodel.Contribution, err error) {
+	// Read file from disk
+	file, err := gpx.ParseFile(filedir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Fetch tracks
+	path := geo.NewPath()
+	var timestamps []time.Time
+	var unixTimes []int64
+	for _, track := range file.Tracks {
+		for _, segment := range track.Segments {
+			for _, point := range segment.Points {
+				// Set geo point
+				if !math.IsNaN(point.Latitude) && !math.IsNaN(point.Longitude) {
+					path.Push(geo.NewPoint(point.Longitude, point.Latitude))
+					timestamps = append(timestamps, point.Timestamp)
+					unixTimes = append(unixTimes, point.Timestamp.Unix())
+				}
+			}
+		}
+	}
+
+	if len(timestamps) < 1 || len(unixTimes) < 1 {
+		err = fmt.Errorf("Couldn't convert to contribution: %v", "no data points available")
+		return
+	}
+
+	// Set contribution values
+	contrib.UserAgent = "web/Fileupload/gpx"
+	contrib.PointsGeom = path
+	contrib.PointsTime = timestamps
+	contrib.Distance = int(path.GeoDistance())
+	contrib.Duration = int(getMax(unixTimes) - getMin(unixTimes))
+	contrib.TimeStampStart = time.Unix(getMin(unixTimes), 0)
+	contrib.TimeStampStop = time.Unix(getMax(unixTimes), 0)
+
 	return
 }
