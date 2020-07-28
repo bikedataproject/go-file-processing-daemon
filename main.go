@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"go-file-processing-daemon/config"
 	"go-file-processing-daemon/crawl"
-	"go-file-processing-daemon/decode"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
-	"github.com/google/uuid"
 	"github.com/koding/multiconfig"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,6 +26,9 @@ func ReadSecret(file string) string {
 }
 
 func main() {
+	// Set filetypes
+	FileTypes := [2]string{"fit", "gpx"}
+
 	// Set logging to file
 	logfile, err := os.OpenFile(fmt.Sprintf("log/%v.log", time.Now().Unix()), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -69,54 +70,36 @@ func main() {
 
 	// Loop the service forever
 	for {
-		// Walk through file dir
-		files, err := crawl.WalkDirectory(conf.FileDir, "fit")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for _, file := range files {
-			// Convert FIT to contribution
-			contribution, err := decode.FitToContribution(file)
+		// Loop over accepted filetypes
+		for _, filetype := range FileTypes {
+			// Walk through file and handle FIT files
+			fitfiles, err := crawl.WalkDirectory(conf.FileDir, filetype)
 			if err != nil {
-				log.Warnf("Could not convert .FIT to contribution: %v", err)
+				log.Fatal(err)
 			}
-
-			// Get userID from FIT
-			userID, err := decode.GetProviderID(file)
-			if err != nil {
-				log.Warnf("Could not convert .FIT to user: %v", err)
-			}
-
-			// Fetch user data
-			user, err := db.GetUserData(userID)
-			// Check if user exists; if not create a new object
-			if user.ID == "" {
-				user = dbmodel.User{
-					Provider:          "web/Garmin",
-					ProviderUser:      userID,
-					IsHistoryFetched:  true,
-					ExpiresAt:         -1,
-					ExpiresIn:         -1,
-					TokenCreationDate: time.Now(),
-					UserIdentifier:    uuid.New().String(),
-				}
-				usr, err := db.AddUser(&user)
-				if err != nil {
-					log.Fatalf("Could not create new user: %v", err)
-				}
-				user = usr
-			}
-
-			// Add contribution
-			if err := db.AddContribution(&contribution, &user); err != nil {
-				log.Errorf("Could not create contribution: %v", err)
+			// Process files
+			if len(fitfiles) < 1 {
+				log.Info("No files to process")
 			} else {
-				log.Infof("Added contribution for user %v", userID)
-				os.Remove(file)
+				for _, file := range fitfiles {
+					switch filetype {
+					case "fit":
+						if err := HandleFitFile(file); err != nil {
+							log.Errorf("Something went wrong handling a FIT file: %v", err)
+						}
+						break
+					case "gpx":
+						if err := HandleGpxFile(file); err != nil {
+							log.Errorf("Something went wrong handling a GPX file: %v", err)
+						}
+						break
+					default:
+						log.Warnf("Trying to handle a file which is not in filetypes? (%v)", file)
+						break
+					}
+				}
 			}
 		}
-
 		// Repeat each minute
 		time.Sleep(1 * time.Minute)
 	}
