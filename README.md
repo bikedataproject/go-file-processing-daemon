@@ -6,8 +6,8 @@ This repository contains a service to process files that have been uploaded to t
 
 Currently allowed filetypes are:
 
-- FIT
-- GPX
+- [FIT](https://wiki.openstreetmap.org/wiki/FIT#:~:text=FIT%20or%20Flexible%20and%20Interoperable,including%20the%20Edge%20and%20Forerunner.&text=In%20the%20GUI%20it%20is,(FIT)%20Activity%20filefit%22.)
+- [GPX](https://wiki.openstreetmap.org/wiki/GPX)
 - Create an issue (feature request) for new filetypes, or feel free to create a Pull Request
 
 To ensure data privacy for the uploader of a file, the file is deleted from the volume right after it has been processed succesfully. No sensitive data from the files (especially FIT files) is being extracted except for location history and timestamps. 
