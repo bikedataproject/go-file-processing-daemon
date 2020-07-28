@@ -1,5 +1,21 @@
 # go-file-processing-daemon
 
+<p align="center">
+  <a href="https://github.com/bikedataproject/go-file-processing-daemon">
+    <img src="https://avatars3.githubusercontent.com/u/64870976?s=200&v=4" alt="Logo" width="80" height="80">
+  </a>
+
+  <h3 align="center">Go File Processing Daemon</h3>
+
+  <p align="center">
+    This repository goal is to process files that have been uploaded to the server.
+    <br />
+    <a href="https://github.com/bikedataproject/go-file-processing-daemon/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/bikedataproject/go-file-processing-daemon/issues">Request Feature</a>
+  </p>
+</p>
+
 ![Docker Image CI](https://github.com/bikedataproject/go-file-processing-daemon/workflows/Docker%20Image%20CI/badge.svg)![Docker Image CD](https://github.com/bikedataproject/go-file-processing-daemon/workflows/Docker%20Image%20CD/badge.svg)
 
 This repository contains a service to process files that have been uploaded to the server. It will scan the mounted volume each minute for new files, and process their contents. 
