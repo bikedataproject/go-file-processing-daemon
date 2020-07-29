@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math"
+	"os"
 	"strconv"
 	"time"
 
@@ -49,7 +49,8 @@ func FitToContribution(filedir string) (contrib dbmodel.Contribution, err error)
 	// Decode binary file
 	fit, err := fit.Decode(bytes.NewReader(file))
 	if err != nil {
-		err = fmt.Errorf("Could not read binary file as .FIT: %v", err)
+		err = fmt.Errorf("Invalid FIT file format: %v", err)
+		os.Remove(filedir)
 		return
 	}
 
@@ -115,7 +116,9 @@ func GpxToContribution(filedir string) (contrib dbmodel.Contribution, err error)
 	// Read file from disk
 	file, err := gpx.ParseFile(filedir)
 	if err != nil {
-		log.Fatal(err)
+		err = fmt.Errorf("Invalid GPX file format: %v", err)
+		os.Remove(filedir)
+		return
 	}
 
 	// Fetch tracks

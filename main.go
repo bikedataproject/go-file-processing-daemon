@@ -78,9 +78,7 @@ func main() {
 				log.Fatal(err)
 			}
 			// Process files
-			if len(fitfiles) < 1 {
-				log.Info("No files to process")
-			} else {
+			if len(fitfiles) > 0 {
 				for _, file := range fitfiles {
 					switch filetype {
 					case "fit":
@@ -100,7 +98,7 @@ func main() {
 				}
 			}
 		}
-		// Repeat each minute
-		time.Sleep(1 * time.Minute)
+		// Repeat each 10 seconds
+		time.Sleep(10 * time.Second)
 	}
 }
