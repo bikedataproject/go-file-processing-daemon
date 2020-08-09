@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"go-file-processing-daemon/decode"
-	"os"
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
@@ -50,7 +49,6 @@ func HandleFitFile(file string) error {
 		return fmt.Errorf("Could not create contribution: %v", err)
 	}
 	log.Infof("Added contribution for user %v", userID)
-	os.Remove(file)
 	return nil
 }
 
@@ -87,6 +85,5 @@ func HandleGpxFile(file string) error {
 		return fmt.Errorf("Could not create contribution: %v", err)
 	}
 	log.Infof("Added contribution for user %v", user.ID)
-	os.Remove(file)
 	return nil
 }

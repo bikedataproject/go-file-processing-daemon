@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"go-file-processing-daemon/config"
 	"go-file-processing-daemon/crawl"
 	"io/ioutil"
@@ -27,14 +26,14 @@ func ReadSecret(file string) string {
 
 func main() {
 	// Set filetypes
-	FileTypes := [2]string{"fit", "gpx"}
+	FileTypes := []string{"fit", "gpx", "zip"}
 
 	// Set logging to file
-	logfile, err := os.OpenFile(fmt.Sprintf("log/%v.log", time.Now().Unix()), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	/*logfile, err := os.OpenFile(fmt.Sprintf("log/%v.log", time.Now().Unix()), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("Could not create logfile: %v", err)
 	}
-	log.SetOutput(logfile)
+	log.SetOutput(logfile)*/
 
 	// Load configuration values
 	conf := &config.Config{}
@@ -91,10 +90,22 @@ func main() {
 							log.Errorf("Something went wrong handling a GPX file: %v", err)
 						}
 						break
+					case "zip":
+						// Attempt to unzip the file
+						if err := UnpackLocationFiles(file); err != nil {
+							log.Errorf("Could not unzip %v: %v", file, err)
+						} else {
+							// Handle the ZIP file contents
+							if err := HandleLocationFile(file); err != nil {
+								log.Errorf("Could not handle location file: %v", err)
+							}
+						}
+						break
 					default:
 						log.Warnf("Trying to handle a file which is not in filetypes? (%v)", file)
 						break
 					}
+					os.Remove(file)
 				}
 			}
 		}
