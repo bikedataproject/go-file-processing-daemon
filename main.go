@@ -14,6 +14,13 @@ import (
 
 var db dbmodel.Database
 
+const (
+	// LocationHistoryActivityThreshold : Threshold to validate the activity confidence against
+	LocationHistoryActivityThreshold = 40
+	// LocationHistoryCylcingType : Type of activity which matches bike riding
+	LocationHistoryCylcingType = "ON_BICYCLE"
+)
+
 // ReadSecret : Read a file and return it's content as string - used for Docker secrets
 func ReadSecret(file string) string {
 	data, err := ioutil.ReadFile(file)

@@ -16,13 +16,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	// BikeCertaintyThreshold : Threshold to validate the activity confidence against
-	BikeCertaintyThreshold = 40
-	// BikeType : Type of activity which matches bike riding
-	BikeType = "ON_BICYCLE"
-)
-
 // PointActivity : Single activity information object
 type PointActivity struct {
 	Type       string `json:"type"`
@@ -77,7 +70,7 @@ func HandleLocationFile(filepath string) error {
 		// Loop over the activities for each point
 		for _, actCollection := range point.Activity {
 			for _, act := range actCollection.Activity {
-				if act.Type == BikeType && act.Confidence >= BikeCertaintyThreshold {
+				if act.Type == LocationHistoryCylcingType && act.Confidence >= LocationHistoryActivityThreshold {
 					// Set trip
 					trips[timestamp.Format("2006-01-02")] = append(trips[timestamp.Format("2006-01-02")], point)
 					break
