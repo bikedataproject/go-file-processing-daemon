@@ -4,6 +4,7 @@ import (
 	"go-file-processing-daemon/config"
 	"go-file-processing-daemon/crawl"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"time"
 
@@ -98,7 +99,7 @@ func main() {
 						break
 					case "zip":
 						// Attempt to unzip the file
-						if locationfiles, err := UnpackLocationFiles(file); err != nil {
+						if locationfiles, err := UnpackLocationFiles(file, conf.FileDir); err != nil {
 							log.Errorf("Could not unzip %v: %v", file, err)
 						} else {
 							// Handle the ZIP file contents which are .json files
@@ -113,8 +114,7 @@ func main() {
 						log.Warnf("Trying to handle a file which is not in filetypes? (%v)", file)
 						break
 					}
-					// TODO: uncomment line
-					// os.Remove(file)
+					os.Remove(file)
 				}
 			}
 		}

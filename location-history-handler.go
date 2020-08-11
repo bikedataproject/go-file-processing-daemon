@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
-	log "github.com/sirupsen/logrus"
+	"github.com/google/uuid"
 )
 
 // PointActivity : Single activity information object
@@ -53,43 +53,46 @@ func HandleLocationFile(filepath string) error {
 	// Unmarshal file
 	var history LocationHistory
 	if err = json.Unmarshal(data, &history); err != nil {
-		return err
+		return fmt.Errorf("Could not unmarshall data into location history: %v", err)
 	}
 
-	// Convert history to trip-based objects
-	trips := make(map[string][]LocationHistoryPoint)
+	if len(history.Locations) > 0 {
+		// Convert history to trip-based objects
+		trips := make(map[string][]LocationHistoryPoint)
 
-	// Loop over each individual point & organise per day
-	for _, point := range history.Locations {
-		unixMs, err := strconv.ParseInt(point.TimestampMs, 10, 64)
-		if err != nil {
-			return err
-		}
-		timestamp := time.Unix(unixMs/1000, 0)
+		// Loop over each individual point & organise per day
+		for _, point := range history.Locations {
+			unixMs, err := strconv.ParseInt(point.TimestampMs, 10, 64)
+			if err != nil {
+				return err
+			}
+			timestamp := time.Unix(unixMs/1000, 0)
 
-		// Loop over the activities for each point
-		for _, actCollection := range point.Activity {
-			for _, act := range actCollection.Activity {
-				if act.Type == LocationHistoryCylcingType && act.Confidence >= LocationHistoryActivityThreshold {
-					// Set trip
-					trips[timestamp.Format("2006-01-02")] = append(trips[timestamp.Format("2006-01-02")], point)
-					break
+			// Loop over the activities for each point
+			for _, actCollection := range point.Activity {
+				for _, act := range actCollection.Activity {
+					if act.Type == LocationHistoryCylcingType && act.Confidence >= LocationHistoryActivityThreshold {
+						// Set trip
+						trips[timestamp.Format("2006-01-02")] = append(trips[timestamp.Format("2006-01-02")], point)
+						break
+					}
 				}
 			}
 		}
+	} else {
+		return fmt.Errorf("%v is not a location history file or is empty", filepath)
 	}
 
 	// Clean return
-	log.Info(filepath)
 	return nil
 }
 
 // UnpackLocationFiles : Unzip a given .ZIP file's contents
-func UnpackLocationFiles(filepath string) (locationfiles []string, err error) {
+func UnpackLocationFiles(filepath string, extractPath string) (locationfiles []string, err error) {
 	// Unzip & get all filenames
-	files, err := unzip(filepath, fmt.Sprintf(""))
+	files, err := unzip(filepath, fmt.Sprintf("%v/%v", extractPath, uuid.New()))
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	// Search for the location history files
