@@ -87,7 +87,16 @@ func HandleLocationFile(filepath string) error {
 		if err != nil {
 			return err
 		}
-		log.Info(contributions)
+
+		// Upload data to database
+		for _, contribution := range contributions {
+			user, _ := db.GetUserData("63251108")
+			if err := db.AddContribution(&contribution, &user); err != nil {
+				log.Warnf("Could not add contribution to database: %v", err)
+			} else {
+				log.Info("Add location history trip to database")
+			}
+		}
 
 	} else {
 		return fmt.Errorf("%v is not a location history file or is empty", filepath)
@@ -98,9 +107,10 @@ func HandleLocationFile(filepath string) error {
 }
 
 // UnpackLocationFiles : Unzip a given .ZIP file's contents
-func UnpackLocationFiles(filepath string, extractPath string) (locationfiles []string, err error) {
+func UnpackLocationFiles(filepath string, extractPath string) (locationfiles []string, foldername string, err error) {
 	// Unzip & get all filenames
-	files, err := unzip(filepath, fmt.Sprintf("%v/%v", extractPath, uuid.New()))
+	foldername = fmt.Sprintf("%v/%v", extractPath, uuid.New())
+	files, err := unzip(filepath, foldername)
 	if err != nil {
 		return
 	}
@@ -143,7 +153,7 @@ func tripsToContributions(trips map[string][]LocationHistoryPoint) (contribution
 				TimeStampStart: getStartTimestamp(trip),
 				TimeStampStop:  getEndTimestamp(trip),
 				Distance:       int(geoPath.GeoDistance()),
-				Duration:       int(getEndTimestamp(trip).Sub(getStartTimestamp(trip)).Seconds()),
+				Duration:       int(getEndTimestamp(trip).Sub(getEndTimestamp(trip)).Seconds()),
 				PointsGeom:     geoPath,
 				PointsTime:     timestamps,
 			}

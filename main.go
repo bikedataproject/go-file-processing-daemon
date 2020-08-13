@@ -101,13 +101,13 @@ func main() {
 						break
 					case "zip":
 						// Attempt to unzip the file
-						if locationfiles, err := UnpackLocationFiles(file, conf.FileDir); err != nil {
+						if locationfiles, _, err := UnpackLocationFiles(file, conf.FileDir); err != nil {
 							log.Errorf("Could not unzip %v: %v", file, err)
 						} else {
 							// Handle the ZIP file contents which are .json files
 							for _, locationfile := range locationfiles {
 								if err := HandleLocationFile(locationfile); err != nil {
-									log.Errorf("Could not handle location file: %v", err)
+									log.Warnf("Could not handle location file: %v", err)
 								}
 							}
 						}
