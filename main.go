@@ -20,6 +20,8 @@ const (
 	LocationHistoryActivityThreshold = 40
 	// LocationHistoryCylcingType : Type of activity which matches bike riding
 	LocationHistoryCylcingType = "ON_BICYCLE"
+	// LocationHistoryPointThreshold : Threshold of minimal data points
+	LocationHistoryPointThreshold = 20
 )
 
 // ReadSecret : Read a file and return it's content as string - used for Docker secrets

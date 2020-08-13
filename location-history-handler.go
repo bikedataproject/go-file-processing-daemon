@@ -14,6 +14,8 @@ import (
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
 	"github.com/google/uuid"
+	geo "github.com/paulmach/go.geo"
+	log "github.com/sirupsen/logrus"
 )
 
 // PointActivity : Single activity information object
@@ -79,6 +81,14 @@ func HandleLocationFile(filepath string) error {
 				}
 			}
 		}
+
+		// Convert map to Contributions
+		contributions, err := tripsToContributions(trips)
+		if err != nil {
+			return err
+		}
+		log.Info(contributions)
+
 	} else {
 		return fmt.Errorf("%v is not a location history file or is empty", filepath)
 	}
@@ -107,66 +117,84 @@ func UnpackLocationFiles(filepath string, extractPath string) (locationfiles []s
 // tripsToContributions : Convert location history trips to bikedataproject Contributions
 func tripsToContributions(trips map[string][]LocationHistoryPoint) (contributions []dbmodel.Contribution, err error) {
 	for _, trip := range trips {
-		tsStart, err := getStartTimestamp(trip)
-		if err != nil {
-			return contributions, err
-		}
-		tsStop, err := getEndTimestamp(trip)
-		if err != nil {
-			return contributions, err
-		}
+		// Check if trip contains more points then the threshold
+		if len(trip) >= LocationHistoryPointThreshold {
+			// Create geopath from points
+			geoPath := geo.NewPath()
+			var timestamps []time.Time
 
-		_ = dbmodel.Contribution{
-			UserAgent:      "web/LocationHistory",
-			TimeStampStart: time.Unix(tsStart, 0),
-			TimeStampStop:  time.Unix(tsStop, 0),
-			Distance:       0,
-			Duration:       0,
+			for _, point := range trip {
+				// Add geopoint to path
+				geoPath.Push(geo.NewPoint(point.LongitudeE7/1e7, point.LatitudeE7/1e7))
+
+				// Get point timestamp
+				unixMs, err := strconv.ParseInt(point.TimestampMs, 10, 64)
+				if err != nil {
+					return contributions, err
+				}
+				// Convert to UNIX timestamp
+				ts := time.Unix(unixMs/1000, 0)
+				timestamps = append(timestamps, ts)
+			}
+
+			// Create contribution
+			contrib := dbmodel.Contribution{
+				UserAgent:      "web/LocationHistory",
+				TimeStampStart: getStartTimestamp(trip),
+				TimeStampStop:  getEndTimestamp(trip),
+				Distance:       int(geoPath.GeoDistance()),
+				Duration:       int(getEndTimestamp(trip).Sub(getStartTimestamp(trip)).Seconds()),
+				PointsGeom:     geoPath,
+				PointsTime:     timestamps,
+			}
+
+			// Add contribution to array
+			contributions = append(contributions, contrib)
 		}
 	}
-
 	return
 }
 
-func getStartTimestamp(points []LocationHistoryPoint) (timestamp int64, err error) {
+// getStartTimestamp : get the lowest timestamp of an array of LocationHistoryPoints
+func getStartTimestamp(points []LocationHistoryPoint) (timestamp time.Time) {
 	// Set timestamp to now
-	timestamp = time.Now().Unix()
+	timestamp = time.Now()
 
 	// Loop over trip points
 	for _, p := range points {
-		// Get timestamp in milliseconds
-		unixMs, err := strconv.ParseInt(p.TimestampMs, 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		// Convert to UNIX timestamp
-		unix := unixMs / 1000
-		// Check if timestamp is earlier
-		if unix < timestamp {
-			timestamp = unix
+		if tmpTimestamp, err := getTimestamp(p); err == nil {
+			// Check if timestamp is earlier
+			if diff := timestamp.Sub(tmpTimestamp); diff > 0 {
+				timestamp = tmpTimestamp
+			}
 		}
 	}
 	return
 }
 
-func getEndTimestamp(points []LocationHistoryPoint) (timestamp int64, err error) {
-	// Set timestamp to 1970
-	timestamp = 0
-
+// getStartTimestamp : get the highest timestamp of an array of LocationHistoryPoints
+func getEndTimestamp(points []LocationHistoryPoint) (timestamp time.Time) {
 	// Loop over trip points
 	for _, p := range points {
-		// Get timestamp in milliseconds
-		unixMs, err := strconv.ParseInt(p.TimestampMs, 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		// Convert to UNIX timestamp
-		unix := unixMs / 1000
-		// Check if timestamp is earlier
-		if unix > timestamp {
-			timestamp = unix
+		if tmpTimestamp, err := getTimestamp(p); err == nil {
+			// Check if timestamp is earlier
+			if diff := timestamp.Sub(tmpTimestamp); diff < 0 {
+				timestamp = tmpTimestamp
+			}
 		}
 	}
+	return
+}
+
+// getTimestamp : Get the timestamp of a single LocationHistoryPoint
+func getTimestamp(point LocationHistoryPoint) (timestamp time.Time, err error) {
+	unixMs, err := strconv.ParseInt(point.TimestampMs, 10, 64)
+	if err != nil {
+		return
+	}
+
+	// Convert to UNIX timestamp
+	timestamp = time.Unix(unixMs/1000, 0)
 	return
 }
 
