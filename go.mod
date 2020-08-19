@@ -3,6 +3,7 @@ module go-file-processing-daemon
 go 1.13
 
 require (
+	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/bikedataproject/go-bike-data-lib/dbmodel v0.0.0-20200728150720-09b74d41943c
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect

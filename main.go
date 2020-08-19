@@ -3,9 +3,11 @@ package main
 import (
 	"go-file-processing-daemon/config"
 	"go-file-processing-daemon/crawl"
+	"go-file-processing-daemon/decode"
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
@@ -100,13 +102,45 @@ func main() {
 						}
 						break
 					case "zip":
+						// Generate user object
+						var user dbmodel.User
+
 						// Attempt to unzip the file
 						if locationfiles, _, err := UnpackLocationFiles(file, conf.FileDir); err != nil {
 							log.Errorf("Could not unzip %v: %v", file, err)
 						} else {
+							// Search the HTML-file to build a user account
+							for _, file := range locationfiles {
+								if strings.Contains(file, ".html") {
+									err = decode.GetUserFromHTML(file, &user)
+									if err != nil {
+										// Make blank user object
+										log.Errorf("Could not extract user from HTML file: %v", err)
+									} else {
+										// Check if user exists
+										userTmp, err := db.GetUserData(user.ProviderUser)
+										if err != nil {
+											log.Infof("Could not fetch user data: %v", err)
+										}
+										// Check if userdata is empty
+										if userTmp.ID == "" {
+											// Add user to database
+											user, err = db.AddUser(&user)
+											if err != nil {
+												log.Errorf("Could not add new user to database: %v", err)
+											} else {
+												log.Info("Created new user from HTML file")
+											}
+										} else {
+											user = userTmp
+										}
+									}
+								}
+							}
+
 							// Handle the ZIP file contents which are .json files
 							for _, locationfile := range locationfiles {
-								if err := HandleLocationFile(locationfile); err != nil {
+								if err := HandleLocationFile(locationfile, user); err != nil {
 									log.Warnf("Could not handle location file: %v", err)
 								}
 							}

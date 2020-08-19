@@ -2,6 +2,9 @@ package main
 
 import (
 	"archive/zip"
+	"bufio"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
 	"github.com/google/uuid"
 	geo "github.com/paulmach/go.geo"
@@ -45,7 +49,7 @@ type LocationHistory struct {
 }
 
 // HandleLocationFile : Parse a given JSON file and process it's contents
-func HandleLocationFile(filepath string) error {
+func HandleLocationFile(filepath string, user dbmodel.User) error {
 	// Attempt to read the file
 	data, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -90,7 +94,6 @@ func HandleLocationFile(filepath string) error {
 
 		// Upload data to database
 		for _, contribution := range contributions {
-			user, _ := db.GetUserData("63251108")
 			if err := db.AddContribution(&contribution, &user); err != nil {
 				log.Warnf("Could not add contribution to database: %v", err)
 			} else {
@@ -117,7 +120,7 @@ func UnpackLocationFiles(filepath string, extractPath string) (locationfiles []s
 
 	// Search for the location history files
 	for _, file := range files {
-		if strings.Contains(file, ".json") {
+		if strings.Contains(file, ".json") || strings.Contains(file, ".html") {
 			locationfiles = append(locationfiles, file)
 		}
 	}
@@ -205,6 +208,39 @@ func getTimestamp(point LocationHistoryPoint) (timestamp time.Time, err error) {
 
 	// Convert to UNIX timestamp
 	timestamp = time.Unix(unixMs/1000, 0)
+	return
+}
+
+// getUserProvider : Read HTML-file to fetch provider user
+func getProviderUser(filepath string) (id string, err error) {
+	// Read file
+	file, err := os.Open(filepath)
+	if err != nil {
+		return
+	}
+
+	// Convert to bytesreader
+	reader := bufio.NewReader(file)
+
+	// Convert to Goquery object
+	doc, err := goquery.NewDocumentFromReader(reader)
+
+	// Find page title & Loop over results - should be just 1
+	doc.Find(".header_title").Each(func(i int, s *goquery.Selection) {
+		// Split sentence in words
+		pageTitle := strings.Split(s.Text(), " ")
+		for _, word := range pageTitle {
+			// Extract e-mail address
+			if strings.Contains(word, "@") {
+				// Hash with SHA1
+				hasher := sha1.New()
+				hasher.Write([]byte(word))
+				id = hex.EncodeToString(hasher.Sum(nil))
+				break
+			}
+		}
+	})
+
 	return
 }
 
