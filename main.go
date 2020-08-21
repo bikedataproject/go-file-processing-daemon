@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"go-file-processing-daemon/config"
 	"go-file-processing-daemon/crawl"
+	"go-file-processing-daemon/decode"
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
@@ -15,6 +16,15 @@ import (
 )
 
 var db dbmodel.Database
+
+const (
+	// LocationHistoryActivityThreshold : Threshold to validate the activity confidence against
+	LocationHistoryActivityThreshold = 40
+	// LocationHistoryCylcingType : Type of activity which matches bike riding
+	LocationHistoryCylcingType = "ON_BICYCLE"
+	// LocationHistoryPointThreshold : Threshold of minimal data points
+	LocationHistoryPointThreshold = 20
+)
 
 // ReadSecret : Read a file and return it's content as string - used for Docker secrets
 func ReadSecret(file string) string {
@@ -27,14 +37,14 @@ func ReadSecret(file string) string {
 
 func main() {
 	// Set filetypes
-	FileTypes := [2]string{"fit", "gpx"}
+	FileTypes := []string{"fit", "gpx", "zip"}
 
 	// Set logging to file
-	logfile, err := os.OpenFile(fmt.Sprintf("log/%v.log", time.Now().Unix()), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	/*logfile, err := os.OpenFile(fmt.Sprintf("log/%v.log", time.Now().Unix()), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("Could not create logfile: %v", err)
 	}
-	log.SetOutput(logfile)
+	log.SetOutput(logfile)*/
 
 	// Load configuration values
 	conf := &config.Config{}
@@ -91,10 +101,56 @@ func main() {
 							log.Errorf("Something went wrong handling a GPX file: %v", err)
 						}
 						break
+					case "zip":
+						// Generate user object
+						var user dbmodel.User
+
+						// Attempt to unzip the file
+						if locationfiles, _, err := UnpackLocationFiles(file, conf.FileDir); err != nil {
+							log.Errorf("Could not unzip %v: %v", file, err)
+						} else {
+							// Search the HTML-file to build a user account
+							for _, file := range locationfiles {
+								if strings.Contains(file, ".html") {
+									err = decode.GetUserFromHTML(file, &user)
+									if err != nil {
+										// Make blank user object
+										log.Errorf("Could not extract user from HTML file: %v", err)
+									} else {
+										// Check if user exists
+										userTmp, err := db.GetUserData(user.ProviderUser)
+										if err != nil {
+											log.Infof("Could not fetch user data: %v", err)
+										}
+										// Check if userdata is empty
+										if userTmp.ID == "" {
+											// Add user to database
+											user, err = db.AddUser(&user)
+											if err != nil {
+												log.Errorf("Could not add new user to database: %v", err)
+											} else {
+												log.Info("Created new user from HTML file")
+											}
+										} else {
+											user = userTmp
+										}
+									}
+								}
+							}
+
+							// Handle the ZIP file contents which are .json files
+							for _, locationfile := range locationfiles {
+								if err := HandleLocationFile(locationfile, user); err != nil {
+									log.Warnf("Could not handle location file: %v", err)
+								}
+							}
+						}
+						break
 					default:
 						log.Warnf("Trying to handle a file which is not in filetypes? (%v)", file)
 						break
 					}
+					os.Remove(file)
 				}
 			}
 		}

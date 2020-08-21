@@ -1,15 +1,21 @@
 package decode
 
 import (
+	"bufio"
 	"bytes"
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/bikedataproject/go-bike-data-lib/dbmodel"
+	"github.com/google/uuid"
 	geo "github.com/paulmach/go.geo"
 	"github.com/tkrajina/gpxgo/gpx"
 	"github.com/tormoder/fit"
@@ -151,6 +157,54 @@ func GpxToContribution(filedir string) (contrib dbmodel.Contribution, err error)
 	contrib.Duration = int(getMax(unixTimes) - getMin(unixTimes))
 	contrib.TimeStampStart = time.Unix(getMin(unixTimes), 0)
 	contrib.TimeStampStop = time.Unix(getMax(unixTimes), 0)
+
+	return
+}
+
+// GetUserFromHTML : extract a user object from an HTML-file
+func GetUserFromHTML(filepath string, usr *dbmodel.User) (err error) {
+	// Set global user data
+	usr.UserIdentifier = uuid.New().String()
+	usr.ExpiresAt = -1
+	usr.ExpiresIn = -1
+	usr.IsHistoryFetched = true
+	usr.Provider = "web/LocationHistory"
+	usr.TokenCreationDate = time.Now()
+	usr.AccessToken = "0"
+	usr.RefreshToken = "0"
+
+	// Open HTML file
+	file, err := os.Open(filepath)
+	if err != nil {
+		return
+	}
+
+	// Create a buffer reader from the file
+	reader := bufio.NewReader(file)
+
+	// Create goquery documentreader
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		return
+	}
+
+	// Find e-mail address in document
+	// Find the header element first
+	doc.Find(".header_title").Each(func(i int, s *goquery.Selection) {
+		// Split the value of this element by spaces
+		pageTitle := strings.Split(s.Text(), " ")
+		// Loop over each word
+		for _, word := range pageTitle {
+			// Find the e-mail address
+			if strings.Contains(word, "@") {
+				// Hash the e-mail
+				hasher := sha512.New()
+				hasher.Write([]byte(word))
+				usr.ProviderUser = hex.EncodeToString(hasher.Sum(nil))
+				break
+			}
+		}
+	})
 
 	return
 }
