@@ -201,6 +201,7 @@ func GetUserFromHTML(filepath string, usr *dbmodel.User) (err error) {
 				hasher := sha512.New()
 				hasher.Write([]byte(word))
 				usr.ProviderUser = hex.EncodeToString(hasher.Sum(nil))
+				break
 			}
 		}
 	})
